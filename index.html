@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>O Chão Está Mentindo - Jogo 2D de Memória e Reação</title>
+  <meta name="description" content="Um jogo 2D de corrida infinita onde algumas plataformas são falsas! Memorize, descubra pistas sutis e reaja rápido para sobreviver.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Container Principal do Jogo -->
+  <div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- HUD Superior -->
+    <header id="hud">
+      <div class="hud-left">
+        <div class="hud-card score-card">
+          <span class="hud-label">PONTOS</span>
+          <span id="score-display" class="hud-value">0000</span>
+        </div>
+        <div class="hud-card highscore-card">
+          <span class="hud-label">RECORDE</span>
+          <span id="highscore-display" class="hud-value">0000</span>
+        </div>
+        <div class="hud-card distance-card">
+          <span class="hud-label">DISTÂNCIA</span>
+          <span id="distance-display" class="hud-value">0 m</span>
+        </div>
+      </div>
+
+      <div class="hud-center">
+        <!-- Notificação de Combo / Alerta -->
+        <div id="combo-pill" class="hidden">
+          <span id="combo-text">COMBO x2!</span>
+        </div>
+      </div>
+
+      <div class="hud-right">
+        <div class="hud-card phase-card">
+          <span class="hud-label">FASE</span>
+          <span id="phase-badge" class="phase-badge initial">INICIAL</span>
+        </div>
+        <button id="btn-sound" class="icon-btn" aria-label="Ativar/Desativar Som" title="Ativar/Desativar Som (Tecla M)">
+          <span id="sound-icon">🔊</span>
+        </button>
+        <button id="btn-pause" class="icon-btn" aria-label="Pausar Jogo" title="Pausar Jogo (Tecla P)">
+          <span id="pause-icon">⏸️</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Banner Central de Zona de Memória -->
+    <div id="memory-banner" class="memory-banner hidden">
+      <div class="memory-banner-content">
+        <div class="memory-banner-icon">👁️</div>
+        <div class="memory-banner-text">
+          <h3>ZONA DE MEMÓRIA!</h3>
+          <p id="memory-instruction">MEMORIZE O CAMINHO ANTES QUE AS PISTAS SUMAM!</p>
+        </div>
+        <div class="memory-timer-bar">
+          <div id="memory-timer-fill"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tela Inicial de Boas-Vindas / Tutorial Rápido -->
+    <div id="start-screen" class="overlay-screen">
+      <div class="modal-card start-card">
+        <div class="logo-badge">DESAFIO 2D</div>
+        <h1 class="game-title">O CHÃO ESTÁ <span class="highlight-title">MENTINDO</span></h1>
+        <p class="tagline">Nem toda plataforma é sua amiga. Observe as pistas, confie na sua memória e corra!</p>
+
+        <!-- Cartões de Pistas -->
+        <div class="clue-guide">
+          <div class="guide-item safe-guide">
+            <div class="guide-color safe-color"></div>
+            <strong>Segura</strong>
+            <span>Firme e sólida</span>
+          </div>
+          <div class="guide-item fake-guide">
+            <div class="guide-color fake-color"></div>
+            <strong>Falsa</strong>
+            <span>Treme e desaba</span>
+          </div>
+          <div class="guide-item fragile-guide">
+            <div class="guide-color fragile-color"></div>
+            <strong>Frágil</strong>
+            <span>Aguenta 1 pisada</span>
+          </div>
+          <div class="guide-item surprise-guide">
+            <div class="guide-color surprise-color"></div>
+            <strong>Surpresa</strong>
+            <span>Cai na hora!</span>
+          </div>
+        </div>
+
+        <div class="controls-hint">
+          <div class="hint-col">
+            <kbd>ESPAÇO</kbd> ou <kbd>CLIQUE</kbd> ou <kbd>TOQUE</kbd>
+            <span>PULAR</span>
+          </div>
+          <div class="hint-col">
+            <kbd>SETA BAIXO</kbd> ou <kbd>S</kbd>
+            <span>ABAIXAR / SLIDE</span>
+          </div>
+        </div>
+
+        <button id="btn-start" class="btn-play pulse-animation">
+          <span>COMEÇAR CORRIDA</span>
+          <span class="btn-subtext">(Pressione Espaço ou Toque)</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Tela de Pausa -->
+    <div id="pause-screen" class="overlay-screen hidden">
+      <div class="modal-card pause-card">
+        <h2>JOGO PAUSADO</h2>
+        <p>Respire fundo e preste atenção no chão à frente!</p>
+        <div class="pause-actions">
+          <button id="btn-resume" class="btn-play">CONTINUAR (P)</button>
+          <button id="btn-restart-pause" class="btn-secondary">REINICIAR (R)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tela de Game Over -->
+    <div id="gameover-screen" class="overlay-screen hidden">
+      <div class="modal-card gameover-card">
+        <div class="gameover-header">
+          <span class="gameover-badge">FIM DE JOGO</span>
+          <h2 id="gameover-title">O CHÃO TE ENGANOU!</h2>
+        </div>
+
+        <p id="gameover-message" class="gameover-phrase">
+          “Eu avisei que o chão estava mentindo.”
+        </p>
+
+        <!-- Resumo de Estatísticas -->
+        <div class="stats-grid">
+          <div class="stat-box">
+            <span class="stat-label">Pontos da Corrida</span>
+            <span id="final-score" class="stat-val highlight-stat">0</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Distância Percorrida</span>
+            <span id="final-distance" class="stat-val">0 m</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Chãos Falsos Evitados</span>
+            <span id="final-fakes-avoided" class="stat-val">0</span>
+          </div>
+          <div class="stat-box record-box">
+            <span class="stat-label">Melhor Recorde</span>
+            <span id="final-highscore" class="stat-val record-val">0</span>
+            <span id="new-record-tag" class="new-record-tag hidden">NOVO RECORDE! 🎉</span>
+          </div>
+        </div>
+
+        <div class="gameover-buttons">
+          <button id="btn-restart" class="btn-play btn-restart pulse-animation">
+            <span>TENTAR NOVAMENTE</span>
+            <span class="btn-subtext">(Espaço ou Toque)</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controles Virtuais Touch para Mobile -->
+    <div id="touch-controls">
+      <button id="touch-duck" class="touch-btn touch-duck" aria-label="Abaixar">
+        <div class="touch-icon">⬇️</div>
+        <span>ABAIXAR</span>
+      </button>
+      <button id="touch-jump" class="touch-btn touch-jump" aria-label="Pular">
+        <div class="touch-icon">⬆️</div>
+        <span>PULAR</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Scripts Modulares -->
+  <script src="js/audio.js"></script>
+  <script src="js/particles.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/clues.js"></script>
+  <script src="js/platforms.js"></script>
+  <script src="js/obstacles.js"></script>
+  <script src="js/memory.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
